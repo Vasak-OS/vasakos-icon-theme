@@ -14,7 +14,7 @@ fi
 
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-THEME_NAME=WhiteSur
+THEME_NAME=VasakOS
 COLOR_VARIANTS=('' '-light' '-dark')
 THEME_VARIANTS=('' '-purple' '-pink' '-red' '-orange' '-yellow' '-green' '-grey' '-nord')
 
@@ -29,9 +29,6 @@ cat << EOF
     -d, --dest DIR          Specify destination directory (Default: $DEST_DIR)
     -n, --name NAME         Specify theme name (Default: $THEME_NAME)
     -t, --theme VARIANT     Specify theme color variant(s) [default|purple|pink|red|orange|yellow|green|grey|nord|all] (Default: blue)
-    -a, --alternative       Install alternative icons for software center and file-manager
-    -b, --bold              Install bolder panel icons version (1.5px size)
-    -p, --kde-plasma        Replaces Apple logo with KDE Plasma logo.
 
     -r, --remove,
     -u, --uninstall         Uninstall (remove) icon themes
@@ -57,7 +54,7 @@ install() {
   cp -r "${SRC_DIR}"/src/index.theme                                                         "${THEME_DIR}"
 
   #cd "${THEME_DIR}"
-  sed -i "s/WhiteSur/${name}${theme}${color}/g" "${THEME_DIR}"/index.theme
+  sed -i "s/VasakOS/${name}${theme}${color}/g" "${THEME_DIR}"/index.theme
 
   if [[ ${color} == '' ]]; then
     mkdir -p                                                                                 "${THEME_DIR}"/status
@@ -68,20 +65,8 @@ install() {
       sed -i "s/#f2f2f2/#363636/g" "${THEME_DIR}"/status/{16,22,24}/*
     fi
 
-    if [[ ${bold:-} == 'true' ]]; then
-      cp -r "${SRC_DIR}"/bold/*                                                              "${THEME_DIR}"
-    fi
-
     if [[ $DESKTOP_SESSION == '/usr/share/xsessions/budgie-desktop' ]]; then
       cp -r "${SRC_DIR}"/src/status/symbolic-budgie/*.svg                                    "${THEME_DIR}"/status/symbolic
-    fi
-
-    if [[ ${alternative:-} == 'true' ]]; then
-      cp -r "${SRC_DIR}"/alternative/*                                                       "${THEME_DIR}"
-    fi
-
-    if [[ ${plasma:-} == 'true' ]]; then
-      cp -r "${SRC_DIR}"/plasma/*                                                            "${THEME_DIR}"
     fi
 
     if [[ ${theme} != '' ]]; then
@@ -96,10 +81,6 @@ install() {
   if [[ ${color} == '-light' ]]; then
     mkdir -p                                                                                 "${THEME_DIR}"/status
     cp -r ${SRC_DIR}/src/status/{16,22,24,32}                                                "${THEME_DIR}"/status
-
-    if [[ ${bold:-} == 'true' ]]; then
-      cp -r "${SRC_DIR}"/bold/status/{16,22,24}                                              "${THEME_DIR}"/status
-    fi
 
     # Change icon color for light theme
     sed -i "s/#f2f2f2/#363636/g" "${THEME_DIR}"/status/{16,22,24,32}/*
@@ -130,18 +111,6 @@ install() {
     cp -r "${SRC_DIR}"/src/devices/{16,22,24,32,symbolic}                                    "${THEME_DIR}"/devices
     cp -r "${SRC_DIR}"/src/places/{16,22,24,scalable,symbolic}                               "${THEME_DIR}"/places
     cp -r "${SRC_DIR}"/src/status/symbolic                                                   "${THEME_DIR}"/status
-
-    if [[ ${bold:-} == 'true' ]]; then
-      cp -r "${SRC_DIR}"/bold/actions/symbolic/*.svg                                         "${THEME_DIR}"/actions/symbolic
-      cp -r "${SRC_DIR}"/bold/apps/symbolic/*.svg                                            "${THEME_DIR}"/apps/symbolic
-      cp -r "${SRC_DIR}"/bold/devices/symbolic/*.svg                                         "${THEME_DIR}"/devices/symbolic
-      cp -r "${SRC_DIR}"/bold/status/symbolic/*.svg                                          "${THEME_DIR}"/status/symbolic
-    fi
-
-    if [[ ${alternative:-} == 'true' ]]; then
-      cp -r "${SRC_DIR}"/alternative/apps/symbolic/*.svg                                     "${THEME_DIR}"/apps/symbolic
-      cp -r "${SRC_DIR}"/alternative/places/scalable/*.svg                                   "${THEME_DIR}"/places/scalable
-    fi
 
     if [[ ${theme} != '' ]]; then
       cp -r "${SRC_DIR}"/colors/color${theme}/*.svg                                          "${THEME_DIR}"/places/scalable
@@ -229,21 +198,6 @@ while [[ "$#" -gt 0 ]]; do
     -n|--name)
       name="${2}"
       shift 2
-      ;;
-    -a|--alternative)
-      alternative='true'
-      echo "Installing 'alternative' version..."
-      shift
-      ;;
-    -b|--bold)
-      bold='true'
-      echo "Installing 'bold' version..."
-      shift
-      ;;
-    -p|--kde-plasma)
-      plasma='true'
-      echo "Replacing Apple logo with KDE Plasma logo..."
-      shift
       ;;
     -r|--remove|-u|--uninstall)
       remove='true'
