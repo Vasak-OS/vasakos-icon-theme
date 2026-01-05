@@ -2,7 +2,7 @@
 
 THEME_DIR=$(cd $(dirname $0) && pwd)
 
-THEME_NAME=WhiteSur
+THEME_NAME=VasakOS
 
 _THEME_VARIANTS=('' '-red' '-pink' '-purple' '-green' '-yellow' '-orange' '-grey' '-nord')
 

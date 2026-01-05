@@ -1,6 +1,6 @@
 [Icon Theme]
-Name=WhiteSur
-Comment=MacOSX style icon theme for linux.
+Name=VasakOS
+Comment=VasakOS icon theme for vasakOS.
 Inherits=hicolor,breeze
 Example=folder
 
