@@ -1,7 +1,6 @@
-Package: vasakos-icons-settings
+Package: vasakos-icon-theme
 Version: 0.5.3
 Architecture: all
 Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 Description: VasakOS Icons. 
  Icons for vasak-desktop.
- 
