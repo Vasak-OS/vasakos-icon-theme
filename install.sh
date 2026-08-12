@@ -37,6 +37,23 @@ cat << EOF
 EOF
 }
 
+# Recolorea iconos monocromos: solo toca los archivos cuyo unico color es
+# ${from}. Un sed a ciegas romperia los iconos a color que usan ese mismo hex
+# como parte del dibujo (hay ~127 asi entre apps/scalable y mimes).
+recolor_mono() {
+  local from=${1}
+  local to=${2}
+  shift 2
+  local f
+  for f in "${@}"; do
+    [[ -f ${f} ]] || continue
+    # -E con las dos formas: hay iconos que escriben el color como #555
+    if [[ -z $(grep -ohiE '#[0-9a-f]{6}\b|#[0-9a-f]{3}\b' "${f}" | sort -u | grep -viF "${from}") ]]; then
+      sed -i "s/${from}/${to}/gI" "${f}"
+    fi
+  done
+}
+
 install() {
   local dest=${1}
   local name=${2}
@@ -101,16 +118,17 @@ install() {
   fi
 
   if [[ ${color} == '-dark' ]]; then
-    mkdir -p                                                                                 "${THEME_DIR}"/{apps,categories,emblems,devices,mimes,places,status}
+    mkdir -p                                                                                 "${THEME_DIR}"/{apps,categories,emblems,emotes,devices,mimes,places,status}
 
     cp -r "${SRC_DIR}"/src/actions                                                           "${THEME_DIR}"
     cp -r "${SRC_DIR}"/src/apps/{16,22,32,symbolic}                                          "${THEME_DIR}"/apps
-    cp -r "${SRC_DIR}"/src/categories/{22,symbolic}                                          "${THEME_DIR}"/categories
-    cp -r "${SRC_DIR}"/src/emblems/symbolic                                                  "${THEME_DIR}"/emblems
-    cp -r "${SRC_DIR}"/src/mimes/symbolic                                                    "${THEME_DIR}"/mimes
+    cp -r "${SRC_DIR}"/src/categories/{22,32,symbolic}                                       "${THEME_DIR}"/categories
+    cp -r "${SRC_DIR}"/src/emblems/{16,22,24,symbolic}                                       "${THEME_DIR}"/emblems
+    cp -r "${SRC_DIR}"/src/emotes/{22,symbolic}                                              "${THEME_DIR}"/emotes
+    cp -r "${SRC_DIR}"/src/mimes/{16,22,symbolic}                                            "${THEME_DIR}"/mimes
     cp -r "${SRC_DIR}"/src/devices/{16,22,24,32,symbolic}                                    "${THEME_DIR}"/devices
     cp -r "${SRC_DIR}"/src/places/{16,22,24,scalable,symbolic}                               "${THEME_DIR}"/places
-    cp -r "${SRC_DIR}"/src/status/symbolic                                                   "${THEME_DIR}"/status
+    cp -r "${SRC_DIR}"/src/status/{32,symbolic}                                              "${THEME_DIR}"/status
 
     if [[ ${theme} != '' ]]; then
       cp -r "${SRC_DIR}"/colors/color${theme}/*.svg                                          "${THEME_DIR}"/places/scalable
@@ -128,33 +146,36 @@ install() {
     sed -i "s/#363636/#dedede/g" "${THEME_DIR}"/apps/{16,22,32}/*.svg
     sed -i "s/#363636/#dedede/g" "${THEME_DIR}"/categories/22/*.svg
     sed -i "s/#363636/#dedede/g" "${THEME_DIR}"/{actions,devices}/32/*.svg
-    sed -i "s/#363636/#dedede/g" "${THEME_DIR}"/{actions,apps,categories,emblems,devices,mimes,places,status}/symbolic/*.svg
+    sed -i "s/#363636/#dedede/g" "${THEME_DIR}"/{actions,apps,categories,emblems,emotes,devices,mimes,places,status}/symbolic/*.svg
+
+    # Directorios que antes se compartian por enlace con la variante base y por
+    # eso quedaban con el color del tema claro. Se recolorea solo lo monocromo
+    # para no tocar los iconos a color (mimes y emblems tienen de los dos).
+    recolor_mono '#363636' '#dedede' "${THEME_DIR}"/emblems/{16,22,24}/*.svg
+    recolor_mono '#363636' '#dedede' "${THEME_DIR}"/emotes/22/*.svg
+    recolor_mono '#363636' '#dedede' "${THEME_DIR}"/mimes/{16,22}/*.svg
+    recolor_mono '#363636' '#dedede' "${THEME_DIR}"/categories/32/*.svg
+    recolor_mono '#363636' '#dedede' "${THEME_DIR}"/places/scalable/*.svg
 
     cp -r "${SRC_DIR}"/links/actions/{16,22,24,32,symbolic}                                  "${THEME_DIR}"/actions
     cp -r "${SRC_DIR}"/links/devices/{16,22,24,32,symbolic}                                  "${THEME_DIR}"/devices
     cp -r "${SRC_DIR}"/links/places/{16,22,24,scalable,symbolic}                             "${THEME_DIR}"/places
     cp -r "${SRC_DIR}"/links/apps/{16,22,32,symbolic}                                        "${THEME_DIR}"/apps
-    cp -r "${SRC_DIR}"/links/categories/{22,symbolic}                                        "${THEME_DIR}"/categories
-    cp -r "${SRC_DIR}"/links/mimes/symbolic                                                  "${THEME_DIR}"/mimes
-    cp -r "${SRC_DIR}"/links/status/symbolic                                                 "${THEME_DIR}"/status
+    cp -r "${SRC_DIR}"/links/categories/{22,32,symbolic}                                     "${THEME_DIR}"/categories
+    cp -r "${SRC_DIR}"/links/emblems/{16,22,24,symbolic}                                     "${THEME_DIR}"/emblems
+    cp -r "${SRC_DIR}"/links/emotes/{22,symbolic}                                            "${THEME_DIR}"/emotes
+    cp -r "${SRC_DIR}"/links/mimes/{16,22,symbolic}                                          "${THEME_DIR}"/mimes
+    cp -r "${SRC_DIR}"/links/status/{32,symbolic}                                            "${THEME_DIR}"/status
 
     cd ${dest}
     ln -s ../${name}${theme}/animations ${name}${theme}-dark/animations
-    ln -s ../${name}${theme}/emotes ${name}${theme}-dark/emotes
     ln -s ../${name}${theme}/preferences ${name}${theme}-dark/preferences
-    ln -s ../../${name}${theme}/categories/32 ${name}${theme}-dark/categories/32
-    ln -s ../../${name}${theme}/emblems/16 ${name}${theme}-dark/emblems/16
-    ln -s ../../${name}${theme}/emblems/22 ${name}${theme}-dark/emblems/22
-    ln -s ../../${name}${theme}/emblems/24 ${name}${theme}-dark/emblems/24
-    ln -s ../../${name}${theme}/mimes/16 ${name}${theme}-dark/mimes/16
-    ln -s ../../${name}${theme}/mimes/22 ${name}${theme}-dark/mimes/22
     ln -s ../../${name}${theme}/mimes/scalable ${name}${theme}-dark/mimes/scalable
     ln -s ../../${name}${theme}/apps/scalable ${name}${theme}-dark/apps/scalable
     ln -s ../../${name}${theme}/devices/scalable ${name}${theme}-dark/devices/scalable
     ln -s ../../${name}${theme}/status/16 ${name}${theme}-dark/status/16
     ln -s ../../${name}${theme}/status/22 ${name}${theme}-dark/status/22
     ln -s ../../${name}${theme}/status/24 ${name}${theme}-dark/status/24
-    ln -s ../../${name}${theme}/status/32 ${name}${theme}-dark/status/32
   fi
 
   (
