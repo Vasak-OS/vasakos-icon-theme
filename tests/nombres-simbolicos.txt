@@ -1,0 +1,74 @@
+# Los nombres que las aplicaciones de VasakOS piden como icono simbólico.
+#
+# El plugin de iconos del escritorio resuelve con FORCE_SYMBOLIC, y GTK con esa
+# bandera busca «<nombre>-symbolic» a lo largo de **toda** la cadena de herencia
+# antes de probar el nombre pelado. O sea que si el pack tiene
+# `actions/16/view-split-left-right.svg` pero no
+# `actions/symbolic/view-split-left-right-symbolic.svg`, el icono no sale de acá:
+# sale de breeze, que dibuja en #232629 y queda invisible sobre el tema oscuro.
+#
+# Cada nombre de esta lista tiene que resolverse **dentro** del pack y ser
+# legible en las dos variantes. Lo verifica `verificar-simbolicos.py`.
+#
+# Sembrada desde vasak-file-manager, que es la aplicación con el vocabulario de
+# barra de herramientas más grande. Al auditar otra aplicación, sumar acá los
+# nombres que pida.
+
+arrow-down
+arrow-left
+arrow-right
+arrow-up
+content-loading-symbolic
+dialog-close
+dialog-filters
+dialog-information
+dialog-warning
+document-new
+drive-harddisk
+drive-removable-media-usb
+edit-copy
+edit-cut
+edit-delete
+edit-delete-shred
+edit-paste
+edit-rename
+edit-select-text
+emblem-default
+emblem-favorite
+emblem-shared
+folder
+folder-new
+folder-open
+go-jump
+gtk-add
+gtk-close
+list-add
+media-eject
+media-playback-start
+media-skip-forward
+object-select-symbolic
+open-menu-symbolic
+overflow-menu
+pin
+preferences-system-network-iscsi
+process-working
+redeyes-symbolic
+refreshstructure
+search
+settings-configure
+showinfo
+swap-panels
+sync
+system-search
+user-home
+user-trash
+view-file-columns
+view-grid
+view-list-text
+view-more-symbolic
+view-refresh
+view-split-left-right
+visibility
+window-close
+window-maximize
+window-minimize
