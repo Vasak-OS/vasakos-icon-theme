@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Verifica que los iconos simbólicos del escritorio salgan de este pack y se vean.
 
-Dos comprobaciones sobre cada nombre de `nombres-simbolicos.txt`:
+Tres comprobaciones sobre cada nombre de `nombres-simbolicos.txt`:
 
 1. **Que se resuelva dentro del pack.** El plugin de iconos pide con
    `FORCE_SYMBOLIC`, y GTK con esa bandera busca «<nombre>-symbolic» a lo largo
@@ -10,7 +10,12 @@ Dos comprobaciones sobre cada nombre de `nombres-simbolicos.txt`:
    resuelto por breeze —que hereda— y dibujado en #232629: negro sobre el tema
    oscuro. Así se perdieron veinte iconos de la barra del gestor de archivos.
 
-2. **Que contraste contra el fondo de su variante.** Sólo se exige a los iconos
+2. **Que no salga más chico de lo que el pack dibuja.** Un alias mal elegido
+   resuelve, contrasta y aun así se ve mal: el primer intento de arreglo mandó
+   la equis de cerrar pestaña a un glifo que ocupa el 52 % del lienzo cuando el
+   resto de la barra ocupa el 84 %, y en la barra se notaba enseguida.
+
+3. **Que contraste contra el fondo de su variante.** Sólo se exige a los iconos
    monocromos grises, que son los que el instalador recolorea variante por
    variante. Los que tienen color propio —el ámbar del `dialog-warning`, el rojo
    del `edit-delete-shred`— dicen algo con ese color y se dejan en paz.
@@ -30,8 +35,9 @@ import tempfile
 
 import gi
 
+gi.require_version("GdkPixbuf", "2.0")
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
+from gi.repository import GdkPixbuf, Gtk  # noqa: E402
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LISTA = os.path.join(RAIZ, "tests", "nombres-simbolicos.txt")
@@ -46,6 +52,20 @@ VARIANTES = (("VasakOS-dark", "#1e1e2e"), ("VasakOS-light", "#eff1f5"))
 CONTRASTE_MINIMO = 2.0
 
 COLOR = re.compile(r"#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}\b")
+
+# Cuánto del lienzo tiene que ocupar el dibujo. La mediana del pack es 0,84 y el
+# piso real 0,59; se pide 0,55 para dejar pasar la variación de estilo y frenar
+# lo que se vea chico al lado de sus vecinos.
+COBERTURA_MINIMA = 0.55
+
+# Los controles de ventana se dibujan chicos a propósito —0,50 los tres— porque
+# viven en una barra de título, no en una barra de herramientas. Son una familia,
+# y se miden entre ellos.
+CONTROLES_DE_VENTANA = {"window-close", "window-minimize", "window-maximize"}
+
+# A qué tamaño se mide. Nada que ver con el tamaño al que se dibujan: es sólo
+# resolución para que la caja de tinta se pueda medir con precisión.
+LADO_DE_MEDIDA = 128
 
 
 def a_rgb(texto):
@@ -72,6 +92,30 @@ def contraste(uno, otro):
 def es_gris(rgb):
     """Si el color es acromático, con la tolerancia justa para los casi-grises."""
     return max(rgb) - min(rgb) <= 8
+
+
+def cobertura(ruta):
+    """Qué fracción del lienzo ocupa el dibujo, por su lado más largo."""
+    imagen = GdkPixbuf.Pixbuf.new_from_file_at_size(ruta, LADO_DE_MEDIDA, LADO_DE_MEDIDA)
+    ancho, alto = imagen.get_width(), imagen.get_height()
+    fila, canales = imagen.get_rowstride(), imagen.get_n_channels()
+    pixeles = imagen.get_pixels()
+
+    if canales < 4:
+        # Sin canal alfa el dibujo llena el lienzo por definición.
+        return 1.0
+
+    izq, arriba, der, abajo = ancho, alto, -1, -1
+    for y in range(alto):
+        base = y * fila
+        for x in range(ancho):
+            if pixeles[base + x * canales + 3] > 25:
+                izq, der = min(izq, x), max(der, x)
+                arriba, abajo = min(arriba, y), max(abajo, y)
+
+    if der < 0:
+        return 0.0
+    return max(der - izq + 1, abajo - arriba + 1) / LADO_DE_MEDIDA
 
 
 def nombres():
@@ -121,6 +165,15 @@ def verificar(destino):
                     f"    falta actions/symbolic/{nombre}-symbolic.svg en el pack"
                 )
                 continue
+
+            if nombre not in CONTROLES_DE_VENTANA:
+                ocupa = cobertura(ruta)
+                if ocupa < COBERTURA_MINIMA:
+                    fallas.append(
+                        f"{variante}: «{nombre}» ocupa {ocupa:.2f} del lienzo, "
+                        f"menos que el {COBERTURA_MINIMA} del pack "
+                        f"— {os.path.basename(ruta)}"
+                    )
 
             with open(ruta, encoding="utf-8", errors="ignore") as archivo:
                 colores = {a_rgb(c) for c in COLOR.findall(archivo.read())}
