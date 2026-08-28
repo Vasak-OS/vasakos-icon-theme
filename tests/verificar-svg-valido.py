@@ -18,47 +18,40 @@ Uso:
     ./tests/verificar-svg-valido.py <ruta>  # sobre una instalación ya hecha
 """
 
-import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ESPACIO_SVG = "http://www.w3.org/2000/svg"
-ETIQUETA_ABRE = re.compile(r"<svg\b[^>]*>", re.S)
 
 
 def problemas_de(archivo: Path) -> list[str]:
-    """Lo que haría que un navegador no dibuje este archivo."""
-    fallas = []
+    """Lo que haría que un navegador no dibuje este archivo.
 
+    Lo decide el árbol y no una expresión regular sobre el texto: `<svg[^>]*>`
+    termina en el primer `>`, que puede estar dentro de un atributo o de un
+    comentario, y buscar la cadena `xmlns=` rechaza `xmlns = …`, que es XML
+    válido. Si el documento parsea y su raíz cae en el espacio de nombres SVG,
+    entonces lo declara.
+    """
     try:
         texto = archivo.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as error:
         return [f"no se pudo leer: {error}"]
 
-    etiqueta = ETIQUETA_ABRE.search(texto)
-    if etiqueta is None:
-        return ["no tiene una etiqueta <svg>"]
-
-    # Lo que rompió las flechas. Se mira en la etiqueta de apertura y no en el
-    # archivo entero: un `xmlns` de otro elemento —`<style>`, un `<image>`
-    # incrustado— no le da espacio de nombres al documento.
-    if "xmlns=" not in etiqueta.group(0):
-        fallas.append("el <svg> no declara xmlns")
-
-    # Y que además sea XML bien formado: una etiqueta sin cerrar la dibuja
-    # librsvg y no un navegador.
     try:
         raiz = ET.fromstring(texto)
     except ET.ParseError as error:
-        fallas.append(f"XML mal formado: {error}")
-    else:
-        if not raiz.tag.endswith("svg"):
-            fallas.append(f"la raíz no es <svg> sino <{raiz.tag}>")
-        elif raiz.tag != f"{{{ESPACIO_SVG}}}svg":
-            fallas.append(f"la raíz no está en el espacio de nombres SVG: {raiz.tag}")
+        # Una etiqueta sin cerrar la dibuja librsvg y no un navegador.
+        return [f"XML mal formado: {error}"]
 
-    return fallas
+    if raiz.tag == f"{{{ESPACIO_SVG}}}svg":
+        return []
+    if raiz.tag == "svg":
+        # Lo que rompió las flechas: sin espacio de nombres, para un navegador
+        # esto no es un documento SVG.
+        return ["el <svg> no declara xmlns"]
+    return [f"la raíz no es un <svg> del espacio de nombres SVG, sino <{raiz.tag}>"]
 
 
 def main() -> int:
@@ -69,10 +62,30 @@ def main() -> int:
 
     revisados = 0
     con_problemas: list[tuple[Path, list[str]]] = []
+    ya_vistos: set[Path] = set()
 
     for archivo in sorted(raiz.rglob("*.svg")):
-        # Los enlaces apuntan a un archivo que ya se revisa por su cuenta.
-        if archivo.is_symlink() or not archivo.is_file():
+        if archivo.is_symlink():
+            # Un enlace no se salta sin mirarlo: si está roto no lo dibuja nadie,
+            # y si apunta fuera del árbol que se recorre, saltarlo daría por
+            # bueno un icono que nunca se revisó.
+            try:
+                destino = archivo.resolve(strict=True)
+            except OSError:
+                con_problemas.append((archivo, ["el enlace no lleva a ningún archivo"]))
+                continue
+            if destino.is_relative_to(raiz):
+                continue  # se revisa por su cuenta al llegarle el turno
+            if destino in ya_vistos:
+                continue
+            ya_vistos.add(destino)
+            revisados += 1
+            fallas = problemas_de(destino)
+            if fallas:
+                con_problemas.append((archivo, [f"apunta fuera del árbol: {f}" for f in fallas]))
+            continue
+
+        if not archivo.is_file():
             continue
         revisados += 1
         fallas = problemas_de(archivo)
