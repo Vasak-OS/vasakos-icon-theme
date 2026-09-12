@@ -40,12 +40,16 @@ folder
 folder-new
 folder-open
 go-jump
+goa-account
+google
 gtk-add
 gtk-close
 list-add
 media-eject
 media-playback-start
 media-skip-forward
+microsoft
+nextcloud
 object-select-symbolic
 open-menu-symbolic
 overflow-menu
