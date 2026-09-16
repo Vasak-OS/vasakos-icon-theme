@@ -18,6 +18,7 @@ arrow-down
 arrow-left
 arrow-right
 arrow-up
+camera-web
 content-loading-symbolic
 dialog-close
 dialog-filters
@@ -48,6 +49,7 @@ list-add
 media-eject
 media-playback-start
 media-skip-forward
+microphone-sensitivity-high
 microsoft
 nextcloud
 object-select-symbolic
@@ -73,6 +75,7 @@ view-more-symbolic
 view-refresh
 view-split-left-right
 visibility
+vsk-camera-microphone
 window-close
 window-maximize
 window-minimize
